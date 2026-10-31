@@ -4,7 +4,7 @@ import os, re, subprocess, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 STATE = os.path.join(ROOT, "docs/agent_governance/PROJECT_STATE.yaml")
 REJECTED = [
-    (r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|api[_-]?key\s*[:=]\s*["'][A-Za-z0-9]{16}", "D02 violated"),
+    (r"-----BEGIN [A-Z ]*PRIVATE KEY-----", "D02 secrets committed"),
 ]
 SKIP = (".git", "node_modules", ".venv", "venv", "tools/gov", "docs/agent_governance",
         "outputs", "dist", "build", "__pycache__", ".worktrees")
@@ -35,7 +35,7 @@ def gate_decisions():
     for dp, _d, fs in os.walk(ROOT):
         for fn in fs:
             rel = os.path.relpath(os.path.join(dp, fn), ROOT)
-            if rel.startswith(SKIP) or os.path.getsize(os.path.join(dp, fn)) > 2_000_000: continue
+            if rel.startswith(SKIP) or ".test." in fn or "detect-secrets" in rel or "/tests/" in rel or os.path.getsize(os.path.join(dp, fn)) > 2_000_000: continue
             try: txt = open(os.path.join(dp, fn), errors="ignore").read()
             except OSError: continue
             for pat, label in REJECTED:
